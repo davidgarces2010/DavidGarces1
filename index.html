@@ -158,7 +158,7 @@ tira.show();</code></pre>
 
 <script>
 // Ejemplo: reemplaza por tus componentes reales y su número de LED
-const comps=[["Resistencia 220 Ω",2],["LED rojo 5 mm",7],["Sensor ultrasónico HC-SR04",11],["Módulo ESP32",13],["Pulsador",18],["Potenciómetro 10 kΩ",23]];
+const comps=[["Circuito Integrado 1",2],["Circuito Integrado 2",7],["Circuito Integrado 3",11],["Circuito Integrado 4",13],["Circuito Integrado 5",18],["Circuito Integrado 6",23]];
 const grid=document.getElementById('grid'),sel=document.getElementById('comp'),msg=document.getElementById('msg');
 for(let i=0;i<25;i++){const d=document.createElement('div');d.className='drawer';d.innerHTML='<i></i>'+(i+1);grid.appendChild(d)}
 comps.forEach(([n,p],k)=>sel.add(new Option(n,k)));
