@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoComponent · El estante que enciende una luz donde está tu componente</title>
+<meta name="description" content="Estante inteligente con ESP32 y LEDs para ubicar componentes electrónicos. Proyecto escolar gratuito.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bench:#EDF1F0;--ink:#16282B;--pcb:#0F5E4D;--led:#FFC93C;--card:#B98B55;--paper:#FFFFFF;--muted:#4D6165}
+@media(prefers-color-scheme:dark){:root{--bench:#101C1E;--ink:#E8EFEE;--paper:#182A2D;--muted:#9FB3B6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bench);color:var(--ink);font:400 1.05rem/1.65 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.1;margin:0 0 .5em}
+h1{font-size:clamp(2.4rem,7vw,4.6rem);font-weight:800}
+h2{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:700}
+h3{font-size:1.2rem}
+a{color:var(--pcb)} @media(prefers-color-scheme:dark){a{color:var(--led)}}
+:focus-visible{outline:3px solid var(--led);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 1.2rem}
+section{padding:3.5rem 0}
+p{max-width:68ch}
+.hero{display:grid;gap:2rem;grid-template-columns:1.1fr 1fr;align-items:center;padding:3rem 0}
+@media(max-width:800px){.hero{grid-template-columns:1fr}}
+.sub{color:var(--muted);font-size:1.15rem}
+.btn{display:inline-block;background:var(--pcb);color:#fff;padding:.7rem 1.2rem;border-radius:8px;text-decoration:none;font-weight:600;margin:.3rem .4rem .3rem 0}
+.btn.alt{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+/* Estante interactivo */
+.shelf{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 10px 0 #8a6537}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.drawer{aspect-ratio:1.3;background:#D9B27C;border:2px solid #8a6537;border-radius:5px;position:relative;font:600 .7rem Figtree;color:#5b4120;display:flex;align-items:flex-end;padding:3px 5px}
+.drawer::before{content:"";position:absolute;top:7px;left:50%;width:34%;height:5px;margin-left:-17%;background:#8a6537;border-radius:3px}
+.drawer i{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:#7a6a4b}
+.drawer.on{background:#F3D58E}
+.drawer.on i{background:var(--led);box-shadow:0 0 12px 5px var(--led)}
+.search{margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap}
+select{flex:1;min-width:180px;padding:.65rem;border-radius:8px;border:2px solid var(--ink);background:var(--paper);color:var(--ink);font:inherit}
+button{font:inherit;cursor:pointer}
+.note{font-size:.88rem;color:var(--muted)}
+/* Pasos */
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:1rem;counter-reset:s;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.steps li{counter-increment:s;background:var(--paper);border-left:6px solid var(--pcb);padding:1rem 1.2rem;border-radius:0 10px 10px 0}
+.steps li::before{content:counter(s);font:800 2rem 'Bricolage Grotesque';color:var(--pcb)}
+@media(prefers-color-scheme:dark){.steps li::before{color:var(--led)}}
+.flow{background:var(--pcb);color:#fff;padding:1rem 1.4rem;border-radius:10px;font-weight:600;margin-top:1.4rem}
+pre{background:#0d1b1d;color:#d8f3e8;padding:1rem;border-radius:10px;overflow-x:auto;font-size:.85rem}
+.two{display:grid;gap:2rem;grid-template-columns:1fr 1fr}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+.gallery{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+figure{margin:0;background:var(--paper);border-radius:10px;overflow:hidden}
+figure img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:repeating-linear-gradient(45deg,#d9b27c,#d9b27c 12px,#cda46c 12px,#cda46c 24px)}
+figcaption{padding:.7rem 1rem;font-size:.92rem}
+table{border-collapse:collapse;width:100%;background:var(--paper);border-radius:10px;overflow:hidden}
+td,th{padding:.7rem 1rem;text-align:left;border-bottom:1px solid var(--bench)}
+th{background:var(--card);color:#2b1d0c}
+.quote{border-left:6px solid var(--led);padding:.5rem 1.2rem;font:700 1.4rem 'Bricolage Grotesque';max-width:34ch}
+footer{background:var(--pcb);color:#fff;padding:2rem 0;text-align:center}
+@media(prefers-reduced-motion:no-preference){.drawer,.drawer i{transition:all .25s}}
+</style>
+</head>
+<body>
+<header class="wrap hero">
+  <div>
+    <h1>AutoComponent</h1>
+    <p class="sub">Un estante inteligente que enciende una luz justo en el cajón donde está el componente que buscas. Hecho para el Taller de Electricidad y Electrónica de nuestro colegio.</p>
+    <a class="btn" href="#probar">Prueba la búsqueda</a>
+    <a class="btn alt" href="#esp32">Cómo funciona por dentro</a>
+  </div>
+  <div id="probar">
+    <div class="shelf" aria-label="Simulación del estante de 25 cajones"><div class="grid" id="grid"></div></div>
+    <div class="search">
+      <select id="comp" aria-label="Elige un componente"></select>
+      <button class="btn" id="buscar" type="button">Ubicar</button>
+    </div>
+    <p class="note" id="msg" role="status">Simulación del Prototipo #1 (25 LEDs). Elige un componente y mira qué cajón se ilumina. Los nombres son de ejemplo.</p>
+  </div>
+</header>
+
+<main>
+<section class="wrap">
+  <h2>El problema: lo que no se encuentra, no se usa</h2>
+  <p>En el Taller de Electricidad y Electrónica hay muchos componentes, pero se usan menos de lo que podrían: es difícil saber qué hay y dónde está guardado. AutoComponent guarda los componentes y te lleva directo a ellos.</p>
+  <p class="quote">Lo buscas en el celular. El estante te lo señala.</p>
+</section>
+
+<section class="wrap">
+  <h2>Cómo funciona</h2>
+  <ol class="steps">
+    <li><h3>Abre la plataforma</h3>Entra desde cualquier celular con internet. No hay que instalar nada.</li>
+    <li><h3>Busca o escanea</h3>Escribe el componente o escanea su código QR. Creamos 85 códigos con información de cada uno.</li>
+    <li><h3>La app envía la señal</h3>La plataforma web le manda la orden de búsqueda a la ESP32.</li>
+    <li><h3>Se enciende el LED</h3>La ESP32 ilumina el LED del cajón correcto en la tira.</li>
+  </ol>
+  <div class="flow">Celular → App web → ESP32 → Tira de LEDs → Cajón</div>
+</section>
+
+<section class="wrap two">
+  <div>
+    <h2>La plataforma web</h2>
+    <p>Desarrollamos la aplicación con <strong>Vento IA</strong>. Muestra el inventario, permite buscar componentes y envía la señal al estante.</p>
+    <p>Como es una página web, funciona desde <strong>cualquier celular con acceso a internet</strong>: estudiantes y profesores usan su propio teléfono.</p>
+  </div>
+  <div>
+    <h2>Fotos del prototipo</h2>
+    <p>Agrega tus fotos en <code>docs/assets/fotos/</code>. Las franjas de cartón aparecen mientras no estén.</p>
+  </div>
+</section>
+
+<section class="wrap" id="esp32">
+  <h2>La ESP32 y la tira de LEDs</h2>
+  <div class="two">
+    <div>
+      <p><strong>1. Conexión.</strong> La tira de LEDs recibe datos por un pin de la ESP32 (en el ejemplo, el pin 5), comparte tierra (GND) y se alimenta con 5 V.</p>
+      <p><strong>2. Programación.</strong> La ESP32 se conecta al WiFi y abre un pequeño servidor. Cada LED tiene un número.</p>
+      <p><strong>3. Conexión con la app.</strong> Cuando buscas un componente, la app consulta su posición y llama a la ESP32 con ese número. Ella enciende solo ese LED.</p>
+    </div>
+<pre><code>// Pedido de la app a la ESP32
+GET http://IP_ESP32/led?n=12
+
+// En la ESP32
+tira.clear();
+tira.setPixelColor(n, tira.Color(255,200,0));
+tira.show();</code></pre>
+  </div>
+  <p class="note">Código completo de ejemplo: <a href="https://github.com/TU-USUARIO/AutoComponent/blob/main/firmware/esp32_leds/esp32_leds.ino">esp32_leds.ino</a>. Ajusta pin, número de LEDs y WiFi a tu montaje.</p>
+</section>
+
+<section class="wrap">
+  <h2>Prototipos y evidencias</h2>
+  <div class="gallery">
+    <figure><img src="assets/fotos/prototipo-1.jpg" alt="Prototipo 1: estante a escala con 25 LEDs" loading="lazy"><figcaption><strong>Prototipo #1.</strong> Estante a menor escala con 25 LEDs que se encienden desde la web.</figcaption></figure>
+    <figure><img src="assets/fotos/esp32-leds.jpg" alt="ESP32 conectada a la tira de LEDs" loading="lazy"><figcaption><strong>ESP32 y tira de LEDs.</strong> El cerebro y las luces del estante.</figcaption></figure>
+    <figure><img src="assets/fotos/codigos-qr.jpg" alt="Códigos QR de los componentes" loading="lazy"><figcaption><strong>85 códigos QR.</strong> Cada uno guarda la información de un componente.</figcaption></figure>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>El reto de los costos: lo que nos enseñó el cartón</h2>
+  <p>Un estante de madera con 85 cajones resultó demasiado costoso. Probamos con cartón y material reciclable: sirvió para validar la electrónica y el software, pero se daña con facilidad. El problema no está resuelto del todo porque aún no hacemos el prototipo final.</p>
+  <table>
+    <tr><th>Qué funcionó</th><th>Qué no</th></tr>
+    <tr><td>Costo casi nulo y prototipos rápidos</td><td>El material se daña fácilmente</td></tr>
+    <tr><td>Pudimos probar app, ESP32 y LEDs</td><td>No es una solución definitiva</td></tr>
+  </table>
+  <p class="quote">Planifica los costos desde el principio.</p>
+  <p><a href="costos-y-lecciones.md">Lee la historia completa</a></p>
+</section>
+
+<section class="wrap">
+  <h2>Participa</h2>
+  <p>AutoComponent es gratuito y sin fines de lucro. Prueba la plataforma, danos una estrella en GitHub o abre un Issue con tus ideas.</p>
+  <a class="btn" href="https://github.com/TU-USUARIO/AutoComponent">Ver el repositorio</a>
+</section>
+</main>
+
+<footer><div class="wrap"><strong>David Leonardo Garces Vesga</strong> y <strong>Julian David Hernandez Quintero</strong><br>Proyecto escolar de tecnología</div></footer>
+
+<script>
+// Ejemplo: reemplaza por tus componentes reales y su número de LED
+const comps=[["Resistencia 220 Ω",2],["LED rojo 5 mm",7],["Sensor ultrasónico HC-SR04",11],["Módulo ESP32",13],["Pulsador",18],["Potenciómetro 10 kΩ",23]];
+const grid=document.getElementById('grid'),sel=document.getElementById('comp'),msg=document.getElementById('msg');
+for(let i=0;i<25;i++){const d=document.createElement('div');d.className='drawer';d.innerHTML='<i></i>'+(i+1);grid.appendChild(d)}
+comps.forEach(([n,p],k)=>sel.add(new Option(n,k)));
+document.getElementById('buscar').onclick=()=>{
+  const [n,p]=comps[sel.value];
+  [...grid.children].forEach((d,i)=>d.classList.toggle('on',i===p));
+  msg.textContent='"'+n+'" está en el cajón '+(p+1)+'. En el prototipo real, la app envía el LED '+p+' a la ESP32.';
+};
+</script>
+</body>
+</html>
